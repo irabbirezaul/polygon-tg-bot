@@ -13,8 +13,6 @@ last_tx_hashes = {}
 
 # Load user addresses from file safely
 def load_addresses():
-    if not os.path.exists('addresses.json'):
-        return {}
     try:
         with open('addresses.json', 'r') as f:
             content = f.read().strip()
@@ -22,6 +20,7 @@ def load_addresses():
                 return {}
             return json.loads(content)
     except (FileNotFoundError, json.JSONDecodeError):
+        # File missing or invalid JSON, return empty dict
         return {}
 
 # Save user addresses to file
