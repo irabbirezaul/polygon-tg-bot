@@ -20,8 +20,11 @@ def load_addresses():
                 return {}
             return json.loads(content)
     except (FileNotFoundError, json.JSONDecodeError):
-        # File missing or invalid JSON, return empty dict
-        return {}
+        return {} 
+def ensure_addresses_file():
+    if not os.path.exists('addresses.json'):
+        with open('addresses.json', 'w') as f:
+            f.write('{}')
 
 # Save user addresses to file
 def save_addresses(addresses):
