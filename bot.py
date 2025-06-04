@@ -11,22 +11,29 @@ POLYGONSCAN_API_KEY = os.getenv("POLYGONSCAN_API_KEY")
 # Store last transaction hashes per user/address to avoid duplicate alerts
 last_tx_hashes = {}
 
-# Load user addresses from file
+# Load user addresses from file safely
 def load_addresses():
+    if not os.path.exists('addresses.json'):
+        return {}
     try:
         with open('addresses.json', 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
+            content = f.read().strip()
+            if not content:
+                return {}
+            return json.loads(content)
+    except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
 # Save user addresses to file
 def save_addresses(addresses):
-    with open('addresses.json', 'w') as f:
-        json.dump(addresses, f)
+    try:
+        with open('addresses.json', 'w') as f:
+            json.dump(addresses, f)
+    except Exception as e:
+        print(f"Error saving addresses: {e}")
 
 # /start command handler
 async def start(update: ContextTypes.DEFAULT_TYPE, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
     await update.message.reply_text(
         f"Hello {update.effective_user.first_name}! 👋\n\n"
         "Send me your Polygon address using:\n"
