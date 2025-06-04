@@ -11,28 +11,18 @@ POLYGONSCAN_API_KEY = os.getenv("POLYGONSCAN_API_KEY")
 # Store last transaction hashes per user/address to avoid duplicate alerts
 last_tx_hashes = {}
 
-# Load user addresses from file safely
+# Load user addresses from file
 def load_addresses():
     try:
         with open('addresses.json', 'r') as f:
-            content = f.read().strip()
-            if not content:
-                return {}
-            return json.loads(content)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {} 
-def ensure_addresses_file():
-    if not os.path.exists('addresses.json'):
-        with open('addresses.json', 'w') as f:
-            f.write('{}')
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
 
 # Save user addresses to file
 def save_addresses(addresses):
-    try:
-        with open('addresses.json', 'w') as f:
-            json.dump(addresses, f)
-    except Exception as e:
-        print(f"Error saving addresses: {e}")
+    with open('addresses.json', 'w') as f:
+        json.dump(addresses, f)
 
 # /start command handler
 async def start(update: ContextTypes.DEFAULT_TYPE, context: ContextTypes.DEFAULT_TYPE):
@@ -62,6 +52,18 @@ async def set_address(update: ContextTypes.DEFAULT_TYPE, context: ContextTypes.D
     save_addresses(addresses)
 
     await update.message.reply_text(f"✅ Polygon address set to:\n`{address}`\n\nI will start tracking it for you.", parse_mode="Markdown")
+
+# /listaddresses command handler
+async def list_addresses(update: ContextTypes.DEFAULT_TYPE, context: ContextTypes.DEFAULT_TYPE):
+    addresses = load_addresses()
+    if not addresses:
+        await update.message.reply_text("📭 No addresses are being tracked yet.")
+        return
+
+    message = "📄 *Tracked Polygon Addresses:*\n\n"
+    for chat_id, address in addresses.items():
+        message += f"👤 `{chat_id}` ➝ `{address}`\n"
+    await update.message.reply_text(message, parse_mode="Markdown")
 
 # Periodic task to check transactions for all users
 async def check_transactions(context: ContextTypes.DEFAULT_TYPE):
@@ -111,6 +113,7 @@ def main():
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("setaddress", set_address))
+    application.add_handler(CommandHandler("listaddresses", list_addresses))
 
     # Check transactions every 15 seconds
     application.job_queue.run_repeating(check_transactions, interval=15, first=5)
